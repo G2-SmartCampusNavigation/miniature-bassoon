@@ -1,7 +1,9 @@
 
 const RECENT_DESTINATIONS_KEY = '@recent_destinations';
 
-export async function saveRecentDestination(destinationId: string) {
+export async function saveRecentDestination(
+  destinationId: string
+): Promise<void> {
   try {
     const existingData = window.localStorage.getItem(
       RECENT_DESTINATIONS_KEY
@@ -21,7 +23,7 @@ export async function saveRecentDestination(destinationId: string) {
       JSON.stringify(updatedDestinations)
     );
   } catch (error) {
-    console.log('Error saving recent destination:', error);
+    console.error('Error saving recent destinations:', error);
   }
 }
 
@@ -31,9 +33,20 @@ export async function getRecentDestinations(): Promise<string[]> {
       RECENT_DESTINATIONS_KEY
     );
 
-    return data ? JSON.parse(data) : [];
+    if (!data) return [];
+
+    const parsed: unknown = JSON.parse(data);
+
+    if (
+      Array.isArray(parsed) &&
+      parsed.every((id) => typeof id === 'string')
+    ) {
+      return parsed;
+    }
+
+    return [];
   } catch (error) {
-    console.log('Error getting recent destinations:', error);
+    console.error('Error getting recent destinations:', error);
     return [];
   }
 }

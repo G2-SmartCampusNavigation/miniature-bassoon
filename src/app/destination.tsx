@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 
 import {
@@ -10,7 +11,9 @@ import {
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
-import { Destination, destinations } from '../data/destinations';
+import { destinations } from '../data/destinations';
+import type { Destination } from '../data/destinations';
+
 import {
   getCurrentLocation,
   UserLocation,
@@ -23,14 +26,15 @@ import {
 
 import NavigationButton from '../components/NavigationButton';
 
-import { saveRecentDestination } from '../services/storageService';
+import {
+  saveRecentDestination,
+  getRecentDestinations,
+} from '../services/storageService';
 
 export default function DestinationScreen() {
   const router = useRouter();
 
-  const { id } = useLocalSearchParams<{
-    id: string;
-  }>();
+  const { id } = useLocalSearchParams<{ id: string }>();
 
   const [destination, setDestination] =
     useState<Destination | null>(null);
@@ -38,13 +42,16 @@ export default function DestinationScreen() {
   const [currentLocation, setCurrentLocation] =
     useState<UserLocation | null>(null);
 
+  const [recentDestinations, setRecentDestinations] =
+    useState<string[]>([]);
+
   const [loading, setLoading] = useState(true);
 
-  const [error, setError] = useState<string | null>(
-    null
-  );
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+
     const loadDestination = async () => {
       try {
         setLoading(true);
@@ -55,36 +62,60 @@ export default function DestinationScreen() {
         );
 
         if (!foundDestination) {
-          setError('Destination not found.');
+          if (isMounted) {
+            setError('Destination not found.');
+          }
           return;
         }
 
-        setDestination(foundDestination);
+        if (isMounted) {
+          setDestination(foundDestination);
+        }
 
-        // Save destination to local storage
-        await saveRecentDestination(
-          foundDestination.id
-        );
+        // Save the selected destination.
+        await saveRecentDestination(foundDestination.id);
 
-        // Get user's current GPS location
-        const location = await getCurrentLocation();
+        // Load recently viewed destinations.
+        const recent = await getRecentDestinations();
 
-        setCurrentLocation(location);
-      } catch (error) {
-        console.log(
-          'Error loading destination:',
-          error
-        );
+        if (isMounted) {
+          setRecentDestinations(recent);
+        }
 
-        setError(
-          'Unable to get your current location.'
-        );
+        // Get the user's current GPS location.
+        try {
+          const location = await getCurrentLocation();
+
+          if (isMounted) {
+            setCurrentLocation(location);
+          }
+        } catch (locationError) {
+          console.warn(
+            'Unable to get current location:',
+            locationError
+          );
+
+          // The destination details can still be displayed
+          // when GPS is unavailable.
+        }
+      } catch (loadError) {
+        console.error('Error loading destination:', loadError);
+
+        if (isMounted) {
+          setError('Unable to load destination information.');
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     loadDestination();
+
+    return () => {
+      isMounted = false;
+    };
   }, [id]);
 
   if (loading) {
@@ -97,8 +128,7 @@ export default function DestinationScreen() {
         </Text>
 
         <Text style={styles.loadingText}>
-          Getting destination information and your
-          current location.
+          Getting destination information and your current location.
         </Text>
       </View>
     );
@@ -151,14 +181,10 @@ export default function DestinationScreen() {
           style={styles.headerBackButton}
           onPress={() => router.back()}
         >
-          <Text style={styles.headerBackText}>
-            ←
-          </Text>
+          <Text style={styles.headerBackText}>←</Text>
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>
-          Destination
-        </Text>
+        <Text style={styles.headerTitle}>Destination</Text>
       </View>
 
       {/* Destination Header */}
@@ -226,9 +252,7 @@ export default function DestinationScreen() {
 
       {/* Distance */}
       <View style={styles.distanceCard}>
-        <Text style={styles.distanceIcon}>
-          🚶
-        </Text>
+        <Text style={styles.distanceIcon}>🚶</Text>
 
         <View style={styles.distanceContent}>
           <Text style={styles.distanceLabel}>
@@ -243,6 +267,19 @@ export default function DestinationScreen() {
         </View>
       </View>
 
+      {/* Recent destinations status */}
+      <View style={styles.card}>
+        <Text style={styles.sectionTitle}>
+          Recently Viewed
+        </Text>
+
+        <Text style={styles.description}>
+          {recentDestinations.length > 0
+            ? `${recentDestinations.length} recent destination(s) saved on this device.`
+            : 'No recent destinations saved yet.'}
+        </Text>
+      </View>
+
       {/* Navigation */}
       <View style={styles.navigationCard}>
         <Text style={styles.navigationTitle}>
@@ -250,8 +287,7 @@ export default function DestinationScreen() {
         </Text>
 
         <Text style={styles.navigationText}>
-          Open Google Maps for walking directions
-          to this destination.
+          Open Google Maps for directions to this destination.
         </Text>
 
         <NavigationButton
