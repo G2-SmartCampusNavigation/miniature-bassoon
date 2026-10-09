@@ -10,7 +10,7 @@ import {
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
-import { Destination, destinations } from '../data/destinations';
+import { Destination, destinations } from '../data/destination';
 import {
   getCurrentLocation,
   UserLocation,

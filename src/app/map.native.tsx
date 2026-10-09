@@ -18,7 +18,7 @@ import { useRouter } from 'expo-router';
 
 import { getCurrentLocation } from '../services/locationService';
 
-import { destinations } from '../data/destinations';
+import { destinations } from '../data/destination';
 
 type UserLocation = {
   latitude: number;
