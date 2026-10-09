@@ -1,4 +1,3 @@
-
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const RECENT_DESTINATIONS_KEY = '@recent_destinations';
