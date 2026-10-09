@@ -1,6 +1,7 @@
 import {
   Alert,
   Linking,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -16,15 +17,21 @@ export default function NavigationButton({
   longitude,
 }: NavigationButtonProps) {
   const openNavigation = async () => {
-    const googleMapsAppUrl =
-      `google.navigation:q=${latitude},${longitude}`;
-
     const googleMapsWebUrl =
       `https://www.google.com/maps/dir/?api=1` +
       `&destination=${latitude},${longitude}` +
       `&travelmode=walking`;
 
+    const googleMapsAppUrl =
+      `google.navigation:q=${latitude},${longitude}&mode=w`;
+
     try {
+      if (Platform.OS === 'web') {
+        // Open Google Maps walking directions in the browser.
+        window.open(googleMapsWebUrl, '_blank', 'noopener,noreferrer');
+        return;
+      }
+
       const canOpenApp = await Linking.canOpenURL(
         googleMapsAppUrl
       );
@@ -35,9 +42,11 @@ export default function NavigationButton({
         await Linking.openURL(googleMapsWebUrl);
       }
     } catch (error) {
+      console.log('Navigation error:', error);
+
       Alert.alert(
         'Navigation Error',
-        'Unable to open Google Maps.'
+        'Unable to open Google Maps. Please try again.'
       );
     }
   };

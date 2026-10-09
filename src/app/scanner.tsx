@@ -14,7 +14,7 @@ import {
     useCameraPermissions,
 } from 'expo-camera';
 
-import { destinations } from '../data/destinations';
+import { destinations } from '../data/destination';
 
 export default function ScannerScreen() {
   const router = useRouter();

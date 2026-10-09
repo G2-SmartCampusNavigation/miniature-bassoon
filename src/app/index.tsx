@@ -15,7 +15,7 @@ import {
 import { useRouter } from 'expo-router';
 
 import DestinationCard from '../components/DestinationCard';
-import { destinations } from '../data/destinations';
+import { destinations } from '../data/destination';
 import {
   getCurrentLocation,
   UserLocation,
